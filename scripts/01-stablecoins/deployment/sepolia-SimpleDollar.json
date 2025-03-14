@@ -1,0 +1,14 @@
+{
+    "network": "sepolia",
+    "contractName": "SimpleDollar",
+    "contractAddress": "0xE2997d5036dF4b7d679C62cc7e87592a81d36768",
+    "deployer": "0x60F14B03929A7696Ae91468fc2206ea618F80715",
+    "deploymentTimestamp": "2025-03-13T00:00:00.000Z",
+    "tokenDetails": {
+      "name": "Simple Dollar",
+      "symbol": "USD",
+      "decimals": 6,
+      "initialSupply": "1000000000000"
+    },
+    "verificationURL": "https://sepolia.etherscan.io/address/0xE2997d5036dF4b7d679C62cc7e87592a81d36768#code"
+  }

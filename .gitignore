@@ -37,3 +37,7 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Ignore Prettier configuration
+bin/
+.prettierrc
