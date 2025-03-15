@@ -93,36 +93,6 @@ Making a basic lending system with:
 | CollateralizedStablecoin | [0x19858f4fDF9D4451abEC344b5026E27bD4308f39](https://sepolia.etherscan.io/address/0x19858f4fDF9D4451abEC344b5026E27bD4308f39#code) | Sepolia |
 
 
-🧪 Testing and Verification
-For those new to Hardhat, here's how to deploy and interact with the contracts:
-bashCopy# Install dependencies first
-npm install
-
-# Compile all contracts
-npx hardhat compile
-
-# Test contracts locally
-npx hardhat test
-
-# Deploy a contract to Sepolia testnet
-npx hardhat run scripts/01-stablecoins/deploy-SimpleDollar.js --network sepolia
-
-# Verify contract on Etherscan (replace with your contract's address)
-npx hardhat verify --network sepolia 0xYourContractAddress "Constructor Param 1" "Constructor Param 2"
-
-# Run a script to interact with deployed contracts
-npx hardhat run scripts/01-stablecoins/test-sepolia-connection.js --network sepolia
-Make sure your .env file contains:
-CopyPRIVATE_KEY=your_wallet_private_key
-SEPOLIA_RPC_URL=your_sepolia_rpc_endpoint
-ETHERSCAN_API_KEY=your_etherscan_api_key
-
-## 📝 Implementation Notes
-- Fixed self-liquidation issue in CollateralizedStablecoin contract
-- Updated to OpenZeppelin v5 compatibility (replaced `_beforeTokenTransfer` with `_update`)
-- Oracle price configurable by accounts with PRICE_UPDATER_ROLE
-- Liquidations must be performed by an account different from the vault owner
-
 ## 📚 Helpful Resources
 
 - [Prof. Liang Peili's DeFi Course](https://space.bilibili.com/220951871/lists/2824381?type=season)
