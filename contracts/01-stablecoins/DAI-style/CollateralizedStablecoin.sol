@@ -269,69 +269,70 @@ contract CollateralizedStablecoin is
     }
 
     /**
-     * @dev Liquidate an undercollateralized vault
-     * @param owner Address of the vault owner
-     * @param debtAmount Amount of debt to repay and liquidate
-     */
-    function liquidate(
-        address owner,
-        uint256 debtAmount
-    ) external whenNotPaused nonReentrant {
-        Vault storage vault = vaults[owner];
-        require(vault.debtAmount > 0, "No debt to liquidate");
-        require(debtAmount <= vault.debtAmount, "Amount exceeds debt");
+ * @dev Liquidate an undercollateralized vault
+ * @param owner Address of the vault owner
+ * @param debtAmount Amount of debt to repay and liquidate
+ * 
+ * Note: In production systems like MakerDAO (DAI), liquidations are handled through
+ * a more complex auction system where Keepers bid on collateral. This simple
+ * implementation is for educational purposes only.
+ */
 
-        // Apply stability fee before liquidation
-        _applyStabilityFee(owner);
+function liquidate(
+    address owner,
+    uint256 debtAmount
+) external whenNotPaused nonReentrant {
+    require(owner != msg.sender, "Cannot liquidate own vault");
+    
+    Vault storage vault = vaults[owner];
+    require(vault.debtAmount > 0, "No debt to liquidate");
+    require(debtAmount <= vault.debtAmount, "Amount exceeds debt");
 
-        // Check if the vault is undercollateralized
-        uint256 collateralValueInUsd = _getCollateralValue(
-            vault.collateralAmount
-        );
-        uint256 minRequiredCollateral = (vault.debtAmount *
-            liquidationThreshold) / BASE_PRECISION;
+    // Apply stability fee before liquidation
+    _applyStabilityFee(owner);
 
-        require(
-            collateralValueInUsd < minRequiredCollateral,
-            "Vault is not undercollateralized"
-        );
+    // Use getCurrentRatio directly to determine if vault is undercollateralized
+    uint256 currentRatio = getCurrentRatio(owner);
+    require(
+        currentRatio < liquidationThreshold,
+        "Vault is not undercollateralized"
+    );
 
-        // Calculate collateral to liquidate
-        uint256 baseCollateralToLiquidate = priceOracle.usdToEth(debtAmount);
-        uint256 liquidationBonus = (baseCollateralToLiquidate *
-            liquidationPenalty) / BASE_PRECISION;
-        uint256 collateralToLiquidate = baseCollateralToLiquidate +
-            liquidationBonus;
+    // Calculate collateral to liquidate
+    uint256 baseCollateralToLiquidate = priceOracle.usdToEth(debtAmount);
+    uint256 liquidationBonus = (baseCollateralToLiquidate *
+        liquidationPenalty) / BASE_PRECISION;
+    uint256 collateralToLiquidate = baseCollateralToLiquidate +
+        liquidationBonus;
 
-        // Make sure we don't liquidate more than available
-        if (collateralToLiquidate > vault.collateralAmount) {
-            collateralToLiquidate = vault.collateralAmount;
-        }
-
-        // Burn stablecoins from the liquidator
-        _burn(msg.sender, debtAmount);
-
-        // Update vault
-        vault.debtAmount -= debtAmount;
-        vault.collateralAmount -= collateralToLiquidate;
-
-        // Update total collateral
-        totalCollateral -= collateralToLiquidate;
-
-        // Transfer liquidated collateral to the liquidator
-        (bool success, ) = payable(msg.sender).call{
-            value: collateralToLiquidate
-        }("");
-        require(success, "ETH transfer failed");
-
-        emit VaultLiquidated(
-            owner,
-            msg.sender,
-            debtAmount,
-            collateralToLiquidate
-        );
+    // Make sure we don't liquidate more than available
+    if (collateralToLiquidate > vault.collateralAmount) {
+        collateralToLiquidate = vault.collateralAmount;
     }
 
+    // Burn stablecoins from the liquidator
+    _burn(msg.sender, debtAmount);
+
+    // Update vault
+    vault.debtAmount -= debtAmount;
+    vault.collateralAmount -= collateralToLiquidate;
+
+    // Update total collateral
+    totalCollateral -= collateralToLiquidate;
+
+    // Transfer liquidated collateral to the liquidator
+    (bool success, ) = payable(msg.sender).call{
+        value: collateralToLiquidate
+    }("");
+    require(success, "ETH transfer failed");
+
+    emit VaultLiquidated(
+        owner,
+        msg.sender,
+        debtAmount,
+        collateralToLiquidate
+    );
+}
     /**
      * @dev Calculate the current collateralization ratio of a vault
      * @param owner Address of the vault owner

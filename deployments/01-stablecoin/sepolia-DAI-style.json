@@ -1,0 +1,64 @@
+{
+  "project": "DeFi Learning Journey",
+  "deployments": {
+    "oracle": {
+      "network": "sepolia",
+      "contractName": "SimplePriceOracle",
+      "contractAddress": "0x81e0Be288ea0b3d5790e631F39cbacF159012F15",
+      "deployer": "0x60F14B03929A7696Ae91468fc2206ea618F80715",
+      "deploymentTimestamp": "2025-03-14T08:34:01.530Z",
+      "oracleDetails": {
+        "initialEthPrice": "2000000000000000000000",
+        "initialEthPriceUSD": 2000,
+        "currentEthPriceUSD": 5000,
+        "priceUpdaterRole": "0x57f5ea9d704fe847f738b76c26a9c2b1393e39c6819feb8ec85838be3170813f"
+      }
+    },
+    "collateralizedStablecoin": {
+      "network": "sepolia",
+      "contractName": "CollateralizedStablecoin",
+      "contractAddress": "0x19858f4fDF9D4451abEC344b5026E27bD4308f39",
+      "deployer": "0x60F14B03929A7696Ae91468fc2206ea618F80715",
+      "deploymentTimestamp": "2025-03-15T00:00:00.000Z",
+      "dependencies": {
+        "priceOracle": "0x81e0Be288ea0b3d5790e631F39cbacF159012F15"
+      },
+      "parameters": {
+        "collateralRatio": 15000,
+        "collateralRatioPercent": 150,
+        "liquidationThreshold": 12500,
+        "liquidationThresholdPercent": 125,
+        "liquidationPenalty": 1000,
+        "liquidationPenaltyPercent": 10,
+        "stabilityFee": 100,
+        "stabilityFeePercent": 1,
+        "basePrecision": 10000
+      },
+      "roles": {
+        "adminRole": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "pauserRole": "0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a",
+        "liquidatorRole": "0x1dacc22850bc220bec93c47159f243ac2260a738296cfba43a0a13e8ce89c9c3"
+      }
+    }
+  },
+  "notes": [
+    "The CollateralizedStablecoin contract has been updated to fix the self-liquidation issue",
+    "Price oracle was last set to $5000 for cleanup purposes",
+    "This contract implementation is for educational purposes only",
+    "For production use, additional security features and proper testing would be required"
+  ],
+  "usage": {
+    "liquidation": "Liquidations must be performed by an account different from the vault owner",
+    "oracleUpdates": "Only accounts with PRICE_UPDATER_ROLE can update the ETH price",
+    "vaultManagement": "Ensure sufficient collateralization when generating debt"
+  },
+  "nextSteps": [
+    "Test the liquidation functionality with two accounts",
+    "Verify contracts on Etherscan for better transparency",
+    "Consider implementing additional features like maximum debt caps and emergency shutdown"
+  ],
+  "verification": {
+    "contractCode": "https://sepolia.etherscan.io/address/0x19858f4fDF9D4451abEC344b5026E27bD4308f39#code",
+    "oracleCode": "https://sepolia.etherscan.io/address/0x81e0Be288ea0b3d5790e631F39cbacF159012F15#code"
+  }
+}

@@ -30,7 +30,6 @@ contract SimpleDollar is
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant BLACKLISTER_ROLE = keccak256("BLACKLISTER_ROLE");
 
-    // Mapping to store blacklisted addresses
     mapping(address => bool) private _blacklisted;
 
     /**
@@ -43,9 +42,6 @@ contract SimpleDollar is
      *  ├─ PAUSER_ROLE (Pause Permission)
      *  └─ BLACKLISTER_ROLE (Blacklist Permission)
      *
-     * Permissions:
-     * - Super Admin can manage all sub-roles.
-     * - Each sub-role operates independently (Principle of Least Privilege).
      */
     constructor (address admin) ERC20("Simple Dollar", "USD") {
         require(admin != address(0), "Invalid admin address");
@@ -64,11 +60,9 @@ contract SimpleDollar is
         _grantRole(BLACKLISTER_ROLE, admin);
     }
 
-    /**
-     * @dev Mint new tokens to a specified address.
-     * @param to Recipient address.
-     * @param amount Amount of tokens to mint.
-     */
+    
+    // @dev Mint new tokens to a specified address.
+     
     function mint(
         address to,
         uint256 amount
@@ -81,20 +75,14 @@ contract SimpleDollar is
         emit Mint(to, amount);
     }
 
-    /**
-     * @dev Override burn function from ERC20Burnable to comply with ISimpleDollar interface.
-     * @param amount Amount of tokens to burn.
-     */
+        
     function burn(
         uint256 amount
     ) public override(ERC20Burnable, ISimpleDollar) {
         super.burn(amount);
     }
-
-    /**
-     * @dev Override decimals function to comply with ISimpleDollar interface.
-     * @return uint8 Number of decimal places.
-     */
+     
+    
     function decimals()
         public
         view
@@ -105,7 +93,6 @@ contract SimpleDollar is
     }
 
     /**
-     * @dev Override burnFrom function from ERC20Burnable to comply with ISimpleDollar interface.
      * @param account Address of the account to burn from.
      * @param amount Amount of tokens to burn.
      */
@@ -116,24 +103,21 @@ contract SimpleDollar is
         super.burnFrom(account, amount);
     }
 
-    /**
-     * @dev Pause token transfers and operations.
-     */
+    
+    //Pause token transfers and operations.
     function pause() public override onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    /**
-     * @dev Unpause token transfers and operations.
-     */
+    
+    //@dev Unpause token transfers and operations.
+    
     function unpause() public override onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
-    /**
-     * @dev Add an address to the blacklist.
-     * @param account Address to be blacklisted.
-     */
+    //Add an address to the blacklist.
+     
     function blacklist(
         address account
     ) public override onlyRole(BLACKLISTER_ROLE) {
@@ -144,10 +128,9 @@ contract SimpleDollar is
         emit Blacklisted(account);
     }
 
-    /**
-     * @dev Remove an address from the blacklist.
-     * @param account Address to be removed from the blacklist.
-     */
+    
+    // Remove an address from the blacklist.
+    
     function removeFromBlacklist(
         address account
     ) public override onlyRole(BLACKLISTER_ROLE) {
@@ -157,11 +140,9 @@ contract SimpleDollar is
         emit BlacklistRemoved(account);
     }
 
-    /**
-     * @dev Check if an address is blacklisted.
-     * @param account Address to check.
-     * @return bool True if the address is blacklisted.
-     */
+    
+    // @dev Check if an address is blacklisted.
+    
     function isBlacklisted(
         address account
     ) public view override returns (bool) {
@@ -173,7 +154,7 @@ contract SimpleDollar is
      * @param from Sender address.
      * @param to Recipient address.
      * @param value Amount of tokens to transfer.
-     * @dev Note: the previous __beforeTokenTransfer has been depreciated in V5, and the new function is _update. 
+     * Note: the previous __beforeTokenTransfer has been depreciated in V5, and the new function is _update. 
      * It costs me quite a bit of time to find this out.
      */
     function _update(

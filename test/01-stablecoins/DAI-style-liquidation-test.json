@@ -1,0 +1,29 @@
+{
+    "deployments": {
+      "oracle": {
+        "contractAddress": "0x81e0Be288ea0b3d5790e631F39cbacF159012F15",
+        "deploymentBlock": 5361248,
+        "name": "SimplePriceOracle"
+      },
+      "collateralizedStablecoin": {
+        "contractAddress": "0x19858f4fDF9D4451abEC344b5026E27bD4308f39",
+        "deploymentBlock": 5361250,
+        "name": "CollateralizedStablecoin",
+        "parameters": {
+          "collateralRatio": 150,
+          "liquidationThreshold": 125,
+          "liquidationPenalty": 10
+        }
+      },
+      "accounts": {
+        "deployer": "0x60F14B03929A7696Ae91468fc2206ea618F80715",
+        "liquidator": "0x34586d57576AA7c236bcce58c315FEBFcA0e72e5"
+      },
+      "testConfig": {
+        "initialEthPrice": 2000,
+        "vaultCollateral": 0.1,
+        "debtPercentage": 90,
+        "priceDropPercentage": 90
+      }
+    }
+  }

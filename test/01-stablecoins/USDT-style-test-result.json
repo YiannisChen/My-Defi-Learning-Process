@@ -1,0 +1,51 @@
+{
+    "testInfo": {
+      "name": "SimpleDollar Functionality Test",
+      "network": "sepolia",
+      "tester": "0x60F14B03929A7696Ae91468fc2206ea618F80715",
+      "contractAddress": "0xE2997d5036dF4b7d679C62cc7e87592a81d36768",
+      "targetAddress": "0x6185E23677DEb8E13599e4De2DBC2b717874AE82",
+      "testDate": "2025-03-14T00:00:00.000Z"
+    },
+    "roleVerification": {
+      "adminRole": true,
+      "minterRole": true,
+      "pauserRole": true,
+      "blacklisterRole": true
+    },
+    "transferTest": {
+      "initialBalances": {
+        "deployer": "1000000.0",
+        "target": "0.0"
+      },
+      "transferAmount": "100000.0",
+      "success": true,
+      "updatedBalances": {
+        "deployer": "900000.0",
+        "target": "100000.0"
+      }
+    },
+    "burnTest": {
+      "burnAmount": "10000.0",
+      "success": true,
+      "deployerBalanceAfterBurn": "890000.0"
+    },
+    "blacklistTest": {
+      "blacklistingSuccess": true,
+      "targetIsBlacklisted": true,
+      "transferToBlacklisted": {
+        "amount": "50000.0",
+        "success": false,
+        "errorMessage": "execution reverted: Recipient is blacklisted"
+      },
+      "blacklistRemovalSuccess": true,
+      "targetStillBlacklisted": false
+    },
+    "testSummary": {
+      "roleVerificationPassed": true,
+      "transferTestPassed": true,
+      "burnTestPassed": true,
+      "blacklistTestPassed": true,
+      "allTestsPassed": true
+    }
+  }
