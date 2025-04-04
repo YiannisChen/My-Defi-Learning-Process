@@ -1,0 +1,44 @@
+{
+    "testEnvironment": {
+        "network": "Sepolia",
+        "testAccount": {
+            "address": "0x60F14B03929A7696Ae91468fc2206ea618F80715",
+            "initialEthBalance": "4.632632876327389365"
+        }
+    },
+    "tokens": {
+        "dai": {
+            "decimals": 18,
+            "initialBalance": "10000.0"
+        },
+        "adai": {
+            "address": "0x29598b72eb5CeBd806C5dCD549490FdA35B13cD8",
+            "initialBalance": "0.0"
+        }
+    },
+    "strategy": {
+        "address": "0x15D2c56Fe5e62634638292f36DD5E479F16d5B2d",
+        "estimatedAPY": "3%"
+    },
+    "transactions": {
+        "deposit": {
+            "amount": "10.0",
+            "hash": "0xa0ce3df1cd3309333aa3bffe432c029d6a6c6fa978493f8a7bbe8be72cedf515"
+        },
+        "harvest": {
+            "hash": "0x6d70573ff62029239ed47edad22361725be54183ea67f05b844925ecd1bdb041"
+        },
+        "withdrawal": {
+            "amount": "5.0",
+            "hash": "0x1b539a630716068b49ce409b82a6a8833c7a84942c6d2b93ae932150727b7e18"
+        },
+        "withdrawAll": {
+            "hash": "0xc7737c76eae5fba9349238fe084972beb1df8d3f9b1899e475f6fa0a8f0ec512"
+        }
+    },
+    "finalState": {
+        "strategyValue": "10.0",
+        "daiBalance": "9990.0"
+    },
+    "testResult": "Successful"
+}
