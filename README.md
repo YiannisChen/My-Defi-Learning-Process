@@ -48,7 +48,7 @@ I've completed two different flavors of stablecoins:
   - 1% stability fee implementation
 
 ### ERC-4626 Vault
-Just wrapped up my multi-strategy yield vault system following the ERC-4626 standard! I've got Aave integration working like a charm.
+wrapped up the yield vault system following the ERC-4626 standard.
 
 #### Key Features:
 - **ERC-4626 Compliance**: Full implementation of the tokenized vault standard
