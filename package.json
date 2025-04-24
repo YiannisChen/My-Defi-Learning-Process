@@ -8,6 +8,7 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "dotenv": "^16.4.7",
+    "ethereum-waffle": "^4.0.10",
     "hardhat": "^2.22.19",
     "prettier": "^3.5.3",
     "prettier-plugin-solidity": "^1.4.2"

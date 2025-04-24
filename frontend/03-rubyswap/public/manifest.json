@@ -1,0 +1,15 @@
+{
+    "short_name": "RubyswapV2",
+    "name": "RubyswapV2 - Decentralized Trading Protocol",
+    "icons": [
+        {
+            "src": "favicon.ico",
+            "sizes": "64x64 32x32 24x24 16x16",
+            "type": "image/x-icon"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "theme_color": "#e84142",
+    "background_color": "#ffffff"
+}

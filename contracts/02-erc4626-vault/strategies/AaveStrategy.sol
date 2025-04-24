@@ -44,7 +44,11 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
     event SupplyAttempt(uint256 amount, bool success, string errorMessage);
     event DepositAttempt(address asset, uint256 amount, address onBehalfOf);
     event WithdrawAttempt(address asset, uint256 amount, address to);
-    event BalanceCheck(string step, uint256 aTokenBalance, uint256 assetBalance);
+    event BalanceCheck(
+        string step,
+        uint256 aTokenBalance,
+        uint256 assetBalance
+    );
 
     /**
      * @notice Constructs the Aave strategy
@@ -68,7 +72,9 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Verify the asset matches the aToken's underlying asset if possible
         // This check is made optional to support testnets like Sepolia
-        try IAToken(_aToken).UNDERLYING_ASSET_ADDRESS() returns (address underlying) {
+        try IAToken(_aToken).UNDERLYING_ASSET_ADDRESS() returns (
+            address underlying
+        ) {
             if (underlying != address(0)) {
                 require(
                     underlying == _asset,
@@ -143,8 +149,8 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Log balances before investment
         emit BalanceCheck(
-            "Before deposit", 
-            IERC20(aTokenAddress).balanceOf(address(this)), 
+            "Before deposit",
+            IERC20(aTokenAddress).balanceOf(address(this)),
             IERC20(asset).balanceOf(address(this))
         );
 
@@ -167,8 +173,8 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Log balances before investment
         emit BalanceCheck(
-            "Before invest", 
-            IERC20(aTokenAddress).balanceOf(address(this)), 
+            "Before invest",
+            IERC20(aTokenAddress).balanceOf(address(this)),
             IERC20(asset).balanceOf(address(this))
         );
 
@@ -190,9 +196,16 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Check the balance before supply to confirm the exact amount supplied
         uint256 balanceBefore = IERC20(aTokenAddress).balanceOf(address(this));
-        emit SupplyAttempt(amount, true, string(abi.encodePacked(
-            "Balance before: ", _uintToString(balanceBefore)
-        )));
+        emit SupplyAttempt(
+            amount,
+            true,
+            string(
+                abi.encodePacked(
+                    "Balance before: ",
+                    _uintToString(balanceBefore)
+                )
+            )
+        );
 
         // First approve the lending pool to spend tokens
         SafeERC20.forceApprove(IERC20(asset), lendingPoolAddress, 0); // Reset allowance
@@ -200,17 +213,18 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Verify the approval was successful
         require(
-            IERC20(asset).allowance(address(this), lendingPoolAddress) >= amount,
+            IERC20(asset).allowance(address(this), lendingPoolAddress) >=
+                amount,
             "Approval failed"
         );
 
         // Try direct low-level call to Aave V3 pool to handle potential interface differences
         bool success;
         bytes memory result;
-        
+
         // Log the deposit attempt
         emit DepositAttempt(asset, amount, address(this));
-        
+
         // Encode the function call for Aave V3's supply function
         bytes memory callData = abi.encodeWithSignature(
             "supply(address,uint256,address,uint16)",
@@ -219,10 +233,10 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
             address(this),
             0 // referral code
         );
-        
+
         // Make the low-level call with specific gas limit for Sepolia
         (success, result) = lendingPoolAddress.call{gas: 500000}(callData);
-        
+
         // Check if the call was successful
         if (!success) {
             string memory errorMessage = "Unknown error";
@@ -231,7 +245,7 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
                 errorMessage = _getRevertMsg(result);
             }
             emit SupplyAttempt(amount, false, errorMessage);
-            
+
             // Try alternative function signature (some Aave implementations use different signatures)
             callData = abi.encodeWithSignature(
                 "deposit(address,uint256,address,uint16)",
@@ -240,44 +254,65 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
                 address(this),
                 0
             );
-            
-            emit SupplyAttempt(amount, false, "Trying 'deposit' function instead");
+
+            emit SupplyAttempt(
+                amount,
+                false,
+                "Trying 'deposit' function instead"
+            );
             (success, result) = lendingPoolAddress.call{gas: 500000}(callData);
-            
+
             if (!success) {
                 if (result.length > 0) {
                     errorMessage = _getRevertMsg(result);
                 }
                 emit SupplyAttempt(amount, false, errorMessage);
-                revert(string(abi.encodePacked("Aave supply failed: ", errorMessage)));
+                revert(
+                    string(
+                        abi.encodePacked("Aave supply failed: ", errorMessage)
+                    )
+                );
             }
         }
-        
+
         // Get the aToken balance after the supply
         uint256 balanceAfter = IERC20(aTokenAddress).balanceOf(address(this));
         emit BalanceCheck(
-            "After supply", 
-            balanceAfter, 
+            "After supply",
+            balanceAfter,
             IERC20(asset).balanceOf(address(this))
         );
-        
-        uint256 amountSupplied = balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0;
-        
+
+        uint256 amountSupplied = balanceAfter > balanceBefore
+            ? balanceAfter - balanceBefore
+            : 0;
+
         // If the supply didn't increase our aToken balance, it's still possible that
         // it succeeded but the balance hasn't updated yet (timing issues in some implementations)
         if (amountSupplied == 0) {
             // Instead of requiring an immediate balance change, we'll trust that the call succeeded
             // since our low-level call didn't revert
             amountSupplied = amount;
-            emit SupplyAttempt(amount, true, "Supply appeared to succeed but no balance change yet");
+            emit SupplyAttempt(
+                amount,
+                true,
+                "Supply appeared to succeed but no balance change yet"
+            );
         }
-        
+
         // Update total deposits for yield tracking
         totalDeposited += amountSupplied;
-        
-        emit SupplyAttempt(amount, true, string(abi.encodePacked(
-            "Success - supplied: ", _uintToString(amountSupplied)
-        )));
+
+        emit SupplyAttempt(
+            amount,
+            true,
+            string(
+                abi.encodePacked(
+                    "Success - supplied: ",
+                    _uintToString(amountSupplied)
+                )
+            )
+        );
         emit Deposited(amountSupplied);
         return amountSupplied;
     }
@@ -287,7 +322,9 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
      * @param value The uint value to convert
      * @return The string representation
      */
-    function _uintToString(uint256 value) internal pure returns (string memory) {
+    function _uintToString(
+        uint256 value
+    ) internal pure returns (string memory) {
         if (value == 0) {
             return "0";
         }
@@ -311,7 +348,9 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
      * @param _returnData The return data from the failed call
      * @return The extracted error message
      */
-    function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
+    function _getRevertMsg(
+        bytes memory _returnData
+    ) internal pure returns (string memory) {
         // If the _returnData length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "Transaction reverted silently";
 
@@ -340,11 +379,11 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Log the withdrawal attempt
         emit WithdrawAttempt(asset, withdrawAmount, vault);
-        
+
         // Log balances before withdrawal
         emit BalanceCheck(
-            "Before withdraw", 
-            IERC20(aTokenAddress).balanceOf(address(this)), 
+            "Before withdraw",
+            IERC20(aTokenAddress).balanceOf(address(this)),
             IERC20(asset).balanceOf(address(this))
         );
 
@@ -371,11 +410,19 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
                 vault,
                 0
             );
-            emit SupplyAttempt(withdrawAmount, false, "Trying alternative withdraw signature");
-            (success, returnData) = lendingPoolAddress.call{gas: 500000}(payload);
-            
+            emit SupplyAttempt(
+                withdrawAmount,
+                false,
+                "Trying alternative withdraw signature"
+            );
+            (success, returnData) = lendingPoolAddress.call{gas: 500000}(
+                payload
+            );
+
             if (!success) {
-                string memory errorMessage = returnData.length > 0 ? _getRevertMsg(returnData) : "Unknown error";
+                string memory errorMessage = returnData.length > 0
+                    ? _getRevertMsg(returnData)
+                    : "Unknown error";
                 emit SupplyAttempt(withdrawAmount, false, errorMessage);
                 revert("Aave withdraw failed");
             }
@@ -391,8 +438,8 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Log balances after withdrawal
         emit BalanceCheck(
-            "After withdraw", 
-            IERC20(aTokenAddress).balanceOf(address(this)), 
+            "After withdraw",
+            IERC20(aTokenAddress).balanceOf(address(this)),
             IERC20(asset).balanceOf(address(this))
         );
 
@@ -401,9 +448,16 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
             ? totalDeposited - amountWithdrawn
             : 0;
 
-        emit SupplyAttempt(withdrawAmount, true, string(abi.encodePacked(
-            "Withdraw success - withdrawn: ", _uintToString(amountWithdrawn)
-        )));
+        emit SupplyAttempt(
+            withdrawAmount,
+            true,
+            string(
+                abi.encodePacked(
+                    "Withdraw success - withdrawn: ",
+                    _uintToString(amountWithdrawn)
+                )
+            )
+        );
         emit Withdrawn(amountWithdrawn);
         return amountWithdrawn;
     }
@@ -424,11 +478,11 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Log the withdrawal attempt
         emit WithdrawAttempt(asset, type(uint256).max, vault);
-        
+
         // Log balances before withdrawal
         emit BalanceCheck(
-            "Before withdrawAll", 
-            IERC20(aTokenAddress).balanceOf(address(this)), 
+            "Before withdrawAll",
+            IERC20(aTokenAddress).balanceOf(address(this)),
             IERC20(asset).balanceOf(address(this))
         );
 
@@ -455,11 +509,19 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
                 vault,
                 0
             );
-            emit SupplyAttempt(totalBalance, false, "Trying alternative withdrawAll signature");
-            (success, returnData) = lendingPoolAddress.call{gas: 500000}(payload);
-            
+            emit SupplyAttempt(
+                totalBalance,
+                false,
+                "Trying alternative withdrawAll signature"
+            );
+            (success, returnData) = lendingPoolAddress.call{gas: 500000}(
+                payload
+            );
+
             if (!success) {
-                string memory errorMessage = returnData.length > 0 ? _getRevertMsg(returnData) : "Unknown error";
+                string memory errorMessage = returnData.length > 0
+                    ? _getRevertMsg(returnData)
+                    : "Unknown error";
                 emit SupplyAttempt(totalBalance, false, errorMessage);
                 revert("Aave withdraw all failed");
             }
@@ -474,17 +536,24 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Log balances after withdrawal
         emit BalanceCheck(
-            "After withdrawAll", 
-            IERC20(aTokenAddress).balanceOf(address(this)), 
+            "After withdrawAll",
+            IERC20(aTokenAddress).balanceOf(address(this)),
             IERC20(asset).balanceOf(address(this))
         );
 
         // Reset total deposits
         totalDeposited = 0;
 
-        emit SupplyAttempt(totalBalance, true, string(abi.encodePacked(
-            "WithdrawAll success - withdrawn: ", _uintToString(amountWithdrawn)
-        )));
+        emit SupplyAttempt(
+            totalBalance,
+            true,
+            string(
+                abi.encodePacked(
+                    "WithdrawAll success - withdrawn: ",
+                    _uintToString(amountWithdrawn)
+                )
+            )
+        );
         emit Withdrawn(amountWithdrawn);
         return amountWithdrawn;
     }
@@ -506,8 +575,8 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
         // Log current state
         emit BalanceCheck(
-            "Harvest check", 
-            IERC20(aTokenAddress).balanceOf(address(this)), 
+            "Harvest check",
+            IERC20(aTokenAddress).balanceOf(address(this)),
             IERC20(asset).balanceOf(address(this))
         );
 
@@ -523,9 +592,16 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
         // Note: We don't actually withdraw the yield here, just report it
         // The vault can decide to withdraw if needed
 
-        emit SupplyAttempt(yieldAmount, true, string(abi.encodePacked(
-            "Harvest success - yield: ", _uintToString(yieldAmount)
-        )));
+        emit SupplyAttempt(
+            yieldAmount,
+            true,
+            string(
+                abi.encodePacked(
+                    "Harvest success - yield: ",
+                    _uintToString(yieldAmount)
+                )
+            )
+        );
         emit Harvested(yieldAmount);
         return yieldAmount;
     }
@@ -603,11 +679,11 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
         if (withdrawAmount > 0) {
             // Log the withdrawal attempt
             emit WithdrawAttempt(asset, withdrawAmount, recipient);
-            
+
             // Log balances before emergency withdrawal
             emit BalanceCheck(
-                "Before emergency withdraw", 
-                IERC20(aTokenAddress).balanceOf(address(this)), 
+                "Before emergency withdraw",
+                IERC20(aTokenAddress).balanceOf(address(this)),
                 IERC20(asset).balanceOf(address(this))
             );
 
@@ -621,8 +697,10 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
                 recipient
             );
 
-            (success, returnData) = lendingPoolAddress.call{gas: 500000}(payload);
-            
+            (success, returnData) = lendingPoolAddress.call{gas: 500000}(
+                payload
+            );
+
             // If failed, try alternative signature
             if (!success) {
                 payload = abi.encodeWithSignature(
@@ -632,11 +710,19 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
                     recipient,
                     0
                 );
-                emit SupplyAttempt(withdrawAmount, false, "Trying alternative emergency withdraw signature");
-                (success, returnData) = lendingPoolAddress.call{gas: 500000}(payload);
-                
+                emit SupplyAttempt(
+                    withdrawAmount,
+                    false,
+                    "Trying alternative emergency withdraw signature"
+                );
+                (success, returnData) = lendingPoolAddress.call{gas: 500000}(
+                    payload
+                );
+
                 if (!success) {
-                    string memory errorMessage = returnData.length > 0 ? _getRevertMsg(returnData) : "Unknown error";
+                    string memory errorMessage = returnData.length > 0
+                        ? _getRevertMsg(returnData)
+                        : "Unknown error";
                     emit SupplyAttempt(withdrawAmount, false, errorMessage);
                     revert("Aave emergency withdraw failed");
                 }
@@ -650,8 +736,8 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
 
             // Log balances after emergency withdrawal
             emit BalanceCheck(
-                "After emergency withdraw", 
-                IERC20(aTokenAddress).balanceOf(address(this)), 
+                "After emergency withdraw",
+                IERC20(aTokenAddress).balanceOf(address(this)),
                 IERC20(asset).balanceOf(address(this))
             );
 
@@ -660,9 +746,16 @@ contract AaveStrategy is IStrategy, Ownable, Pausable, ReentrancyGuard {
                 ? totalDeposited - amountWithdrawn
                 : 0;
 
-            emit SupplyAttempt(withdrawAmount, true, string(abi.encodePacked(
-                "Emergency withdraw success - withdrawn: ", _uintToString(amountWithdrawn)
-            )));
+            emit SupplyAttempt(
+                withdrawAmount,
+                true,
+                string(
+                    abi.encodePacked(
+                        "Emergency withdraw success - withdrawn: ",
+                        _uintToString(amountWithdrawn)
+                    )
+                )
+            );
             emit EmergencyWithdrawal(
                 amountWithdrawn,
                 recipient,
