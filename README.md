@@ -65,7 +65,6 @@ Features:
 
 ### ERC-4626 Vault
 
-
 #### Key Features:
 
 - **ERC-4626 Compliance**: Full implementation of the tokenized vault standard
@@ -95,6 +94,8 @@ User → Vault → Strategy → Aave Pool
 
 ### RubySwapV2
 
+I've built and deployed a full Uniswap V2-style DEX with:
+
 **Core Features**:
 
 - Implemented x\*y=k constant product formula
@@ -111,6 +112,8 @@ User → Vault → Strategy → Aave Pool
 - Real-time price impact calculations
 - MetaMask wallet integration
 - Mobile-responsive design
+
+![RubySwapV2 Interface](./frontend/03-rubyswap/demo.png)
 
 **Contract Architecture**:
 

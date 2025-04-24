@@ -8,6 +8,10 @@ The application is deployed and accessible at:
 
 - [https://yiannischen.xyz/](https://yiannischen.xyz/)
 
+## Interface Preview
+
+![RubySwap Interface](./demo.png)
+
 ## Features
 
 - Token swapping with ETH and ERC20 tokens
