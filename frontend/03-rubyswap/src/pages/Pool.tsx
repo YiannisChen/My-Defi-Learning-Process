@@ -202,7 +202,7 @@ const Pool: React.FC = () => {
         if (positions.length > 0) {
             return (
                 <>
-                    {positions.map((pos) => (
+                    {positions.map((pos: LiquidityPosition) => (
                         <PositionCard key={pos.pairAddress}>
                             <PositionCardHeader>
                                 <DoubleLogo>

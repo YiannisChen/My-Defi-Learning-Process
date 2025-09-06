@@ -1,0 +1,21 @@
+
+# Coverage reports
+coverage/
+coverage.json
+
+# Temporary development files
+*.sed
+*.tmp
+*.log
+*.bak
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Development scratchpads
+.cursor/scratchpad.md

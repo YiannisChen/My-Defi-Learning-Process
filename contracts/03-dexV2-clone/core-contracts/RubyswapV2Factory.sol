@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "./interfaces/IRubyswapV2Factory.sol";
 import "./RubyswapV2Pair.sol";

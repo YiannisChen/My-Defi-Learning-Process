@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "contracts/03-dexV2-clone/periphery/interfaces/IERC20.sol";
+import "../periphery/interfaces/IERC20.sol";
 
 contract RubyswapV2ERC20 is IERC20 {
-    string public constant name = 'Rubyswap V2';
-    string public constant symbol = 'RUBY-V2';
+    string public constant name = "Rubyswap V2";
+    string public constant symbol = "RUBY-V2";
     uint8 public constant decimals = 18;
     uint public totalSupply;
     mapping(address => uint) public balanceOf;
     mapping(address => mapping(address => uint)) public allowance;
-
-    
 
     function _mint(address to, uint value) internal {
         totalSupply += value;

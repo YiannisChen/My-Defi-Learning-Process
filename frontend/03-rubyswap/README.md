@@ -27,7 +27,7 @@ The application is deployed and accessible at:
 
 - Node.js (v14 or higher)
 - npm or yarn
-- MetaMask or another Web3 wallet
+- MetaMask 
 - Infura API key (sign up at https://infura.io)
 
 ### Installation

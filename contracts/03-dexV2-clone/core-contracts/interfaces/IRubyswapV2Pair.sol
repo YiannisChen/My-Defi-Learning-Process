@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "contracts/03-dexV2-clone/periphery/interfaces/IERC20.sol";
+import "../../periphery/interfaces/IERC20.sol";
 
 interface IRubyswapV2Pair is IERC20 {
     event Mint(address indexed sender, uint amount0, uint amount1);

@@ -1,0 +1,32 @@
+{
+  "name": "defi-stablecoins",
+  "version": "1.0.0",
+  "description": "DeFi stablecoin implementations including fiat-backed and collateralized stablecoins",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:sepolia": "hardhat run scripts/deploy-DAI-style.js --network sepolia",
+    "deploy:oracle": "hardhat run scripts/deploy-oracle.js --network sepolia",
+    "deploy:collateralized": "hardhat run scripts/deploy-collateralized.js --network sepolia"
+  },
+  "keywords": [
+    "defi",
+    "stablecoin",
+    "solidity",
+    "ethereum",
+    "smart-contracts"
+  ],
+  "author": "Yiannis Chen",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.0.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.9",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.9",
+    "@typechain/hardhat": "^9.1.0",
+    "@types/node": "^24.0.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "hardhat": "^2.26.2"
+  }
+} 

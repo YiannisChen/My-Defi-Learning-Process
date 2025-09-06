@@ -1,0 +1,348 @@
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Contract, Signer } from "ethers";
+import { setupTestEnvironment, TestEnvironment } from "../../setup/test-environment";
+
+describe("RubySwapPool - Flash Function", () => {
+  let env: TestEnvironment;
+  let pool: Contract;
+  let token0: Contract;
+  let token1: Contract;
+  let user: Signer;
+  let userAddress: string;
+  let flashRecipient: Contract;
+
+  before(async () => {
+    const signers = await ethers.getSigners();
+    user = signers[1]; // Use user1 from test environment
+    userAddress = await user.getAddress();
+  });
+
+  beforeEach(async () => {
+    env = await setupTestEnvironment();
+    pool = env.pool;
+    token0 = env.token0;
+    token1 = env.token1;
+    
+    // Debug: check token addresses and pool token order
+    console.log("Test token0 address:", await token0.getAddress());
+    console.log("Test token1 address:", await token1.getAddress());
+    console.log("Pool token0 address:", await pool.token0());
+    console.log("Pool token1 address:", await pool.token1());
+    
+    // Deploy a flash recipient contract
+    const FlashRecipient = await ethers.getContractFactory("SimpleFlashLoanRecipient");
+    flashRecipient = await FlashRecipient.deploy();
+    
+    // The test environment already adds liquidity to the pool, so we don't need to add more
+    // But we need to ensure the pool has enough tokens for flash loans
+    const poolAddress = await pool.getAddress();
+    const poolBalance0 = await token0.balanceOf(poolAddress);
+    const poolBalance1 = await token1.balanceOf(poolAddress);
+    
+    // If pool doesn't have enough tokens, mint some to it
+    if (poolBalance0 < ethers.parseEther("1000")) {
+      await token0.mint(poolAddress, ethers.parseEther("1000"));
+    }
+    if (poolBalance1 < ethers.parseEther("1000")) {
+      await token1.mint(poolAddress, ethers.parseEther("1000"));
+    }
+    
+    // Fund the flash recipient with tokens to repay the flash loan
+    await token0.mint(await flashRecipient.getAddress(), ethers.parseEther("1000"));
+    await token1.mint(await flashRecipient.getAddress(), ethers.parseEther("1000"));
+    
+    // Debug: verify the flash recipient has tokens
+    const recipientBalance0 = await token0.balanceOf(await flashRecipient.getAddress());
+    const recipientBalance1 = await token1.balanceOf(await flashRecipient.getAddress());
+    console.log("Flash recipient token0 balance:", recipientBalance0.toString());
+    console.log("Flash recipient token1 balance:", recipientBalance1.toString());
+  });
+
+  describe("Flash Function", () => {
+    it("should execute flash loan successfully", async () => {
+      const amount0 = ethers.parseEther("100");
+      const amount1 = ethers.parseEther("1000");
+      
+      // Get balances before flash
+      const balance0Before = await token0.balanceOf(await pool.getAddress());
+      const balance1Before = await token1.balanceOf(await pool.getAddress());
+      
+      // Calculate expected fees (0.3% = 3000 bps)
+      const fee0 = (amount0 * 3000n) / 1000000n;
+      const fee1 = (amount1 * 3000n) / 1000000n;
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      // Execute flash loan from a regular signer (user), not from flashRecipient contract
+      await expect(
+        pool.connect(user).flash(
+          await flashRecipient.getAddress(),
+          amount0,
+          amount1,
+          data
+        )
+      ).to.emit(pool, "Flash");
+      
+      // Check balances after flash (should increase by fees)
+      const balance0After = await token0.balanceOf(await pool.getAddress());
+      const balance1After = await token1.balanceOf(await pool.getAddress());
+      
+      expect(balance0After).to.equal(balance0Before + fee0);
+      expect(balance1After).to.equal(balance1Before + fee1);
+    });
+
+    it("should revert when no liquidity exists", async () => {
+      // For this test, we'll create a new pool with no liquidity
+      const newPool = await env.factory.createPool(await token0.getAddress(), await token1.getAddress(), 500);
+      const newPoolAddress = await env.factory.getPool(await token0.getAddress(), await token1.getAddress(), 500);
+      const newPoolContract = await ethers.getContractFactory("RubySwapPool");
+      const newPoolInstance = newPoolContract.attach(newPoolAddress);
+      
+      await expect(
+        newPoolInstance.connect(user).flash(
+          await flashRecipient.getAddress(),
+          ethers.parseEther("100"),
+          ethers.parseEther("1000"),
+          "0x"
+        )
+      ).to.be.revertedWith("No liquidity");
+    });
+
+    it("should handle flash loan with only token0", async () => {
+      const amount0 = ethers.parseEther("100");
+      const amount1 = 0;
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      await expect(
+        pool.connect(user).flash(
+          await flashRecipient.getAddress(),
+          amount0,
+          amount1,
+          data
+        )
+      ).to.emit(pool, "Flash");
+    });
+
+    it("should handle flash loan with only token1", async () => {
+      const amount0 = 0;
+      const amount1 = ethers.parseEther("1000");
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      await expect(
+        pool.connect(user).flash(
+          await flashRecipient.getAddress(),
+          amount0,
+          amount1,
+          data
+        )
+      ).to.emit(pool, "Flash");
+    });
+
+    it("should handle flash loan with zero amounts", async () => {
+      const amount0 = 0;
+      const amount1 = 0;
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      await expect(
+        pool.connect(user).flash(
+          await flashRecipient.getAddress(),
+          amount0,
+          amount1,
+          data
+        )
+      ).to.emit(pool, "Flash");
+    });
+
+    it("should update fee growth global when fees are paid", async () => {
+      const amount0 = ethers.parseEther("100");
+      const amount1 = ethers.parseEther("1000");
+      
+      // Get initial fee growth
+      const initialFeeGrowth0 = await pool.feeGrowthGlobal0X128();
+      const initialFeeGrowth1 = await pool.feeGrowthGlobal1X128();
+      
+      // Get balances before flash
+      const balance0Before = await token0.balanceOf(await pool.getAddress());
+      const balance1Before = await token1.balanceOf(await pool.getAddress());
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      // Execute flash loan
+      await pool.connect(user).flash(
+        await flashRecipient.getAddress(),
+        amount0,
+        amount1,
+        data
+      );
+      
+      // Check that fee growth was updated
+      const finalFeeGrowth0 = await pool.feeGrowthGlobal0X128();
+      const finalFeeGrowth1 = await pool.feeGrowthGlobal1X128();
+      
+      expect(finalFeeGrowth0).to.be.gt(initialFeeGrowth0);
+      expect(finalFeeGrowth1).to.be.gt(initialFeeGrowth1);
+      
+      // Check that balances increased by fees
+      const balance0After = await token0.balanceOf(await pool.getAddress());
+      const balance1After = await token1.balanceOf(await pool.getAddress());
+      
+      expect(balance0After).to.be.gt(balance0Before);
+      expect(balance1After).to.be.gt(balance1Before);
+    });
+
+    it("should handle flash loan with custom data", async () => {
+      const amount0 = ethers.parseEther("50");
+      const amount1 = ethers.parseEther("500");
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      await expect(
+        pool.connect(user).flash(
+          await flashRecipient.getAddress(),
+          amount0,
+          amount1,
+          data
+        )
+      ).to.emit(pool, "Flash");
+    });
+
+    it("should revert if flash callback fails", async () => {
+      // Deploy a malicious flash recipient that will fail
+      const MaliciousFlashRecipient = await ethers.getContractFactory("MaliciousFlashLoanRecipient");
+      const maliciousRecipient = await MaliciousFlashRecipient.deploy();
+      
+      const amount0 = ethers.parseEther("100");
+      const amount1 = ethers.parseEther("1000");
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      await expect(
+        pool.connect(user).flash(
+          await maliciousRecipient.getAddress(),
+          amount0,
+          amount1,
+          data
+        )
+      ).to.be.reverted;
+    });
+  });
+
+  describe("Flash Function Edge Cases", () => {
+    it("should handle very small amounts", async () => {
+      const amount0 = 1;
+      const amount1 = 1;
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      await expect(
+        pool.connect(user).flash(
+          await flashRecipient.getAddress(),
+          amount0,
+          amount1,
+          data
+        )
+      ).to.emit(pool, "Flash");
+    });
+
+    it("should handle maximum amounts within liquidity bounds", async () => {
+      // Use smaller amounts that are within the pool's token balance
+      // The pool was initialized with limited liquidity, so use conservative amounts
+      const amount0 = ethers.parseEther("100"); // Use a smaller amount
+      const amount1 = ethers.parseEther("1000"); // Use a smaller amount
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      await expect(
+        pool.connect(user).flash(
+          await flashRecipient.getAddress(),
+          amount0,
+          amount1,
+          data
+        )
+      ).to.emit(pool, "Flash");
+    });
+
+    it("should maintain pool state consistency after flash", async () => {
+      const initialState = {
+        sqrtPriceX96: await pool.sqrtPriceX96(),
+        tick: await pool.tick(),
+        liquidity: await pool.liquidity()
+      };
+      
+      const amount0 = ethers.parseEther("100");
+      const amount1 = ethers.parseEther("1000");
+      
+      const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+      const data = abiCoder.encode([
+        'address','address','uint256','uint256'
+      ], [await token0.getAddress(), await token1.getAddress(), amount0, amount1]);
+      
+      await pool.connect(user).flash(
+        await flashRecipient.getAddress(),
+        amount0,
+        amount1,
+        data
+      );
+      
+      const finalState = {
+        sqrtPriceX96: await pool.sqrtPriceX96(),
+        tick: await pool.tick(),
+        liquidity: await pool.liquidity()
+      };
+      
+      // Core state should remain unchanged
+      expect(finalState.sqrtPriceX96).to.equal(initialState.sqrtPriceX96);
+      expect(finalState.tick).to.equal(initialState.tick);
+      expect(finalState.liquidity).to.equal(initialState.liquidity);
+      
+      // But balances should have increased due to fees
+      const balance0Before = await token0.balanceOf(await pool.getAddress());
+      const balance1Before = await token1.balanceOf(await pool.getAddress());
+      
+      // Flash again to see the balance increase
+      await pool.connect(user).flash(
+        await flashRecipient.getAddress(),
+        amount0,
+        amount1,
+        data
+      );
+      
+      const balance0After = await token0.balanceOf(await pool.getAddress());
+      const balance1After = await token1.balanceOf(await pool.getAddress());
+      
+      expect(balance0After).to.be.gt(balance0Before);
+      expect(balance1After).to.be.gt(balance1Before);
+    });
+  });
+}); 

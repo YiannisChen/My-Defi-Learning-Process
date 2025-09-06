@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -43,7 +43,7 @@ contract SimpleDollar is
      *  └─ BLACKLISTER_ROLE (Blacklist Permission)
      *
      */
-    constructor (address admin) ERC20("Simple Dollar", "USD") {
+    constructor(address admin) ERC20("Simple Dollar", "USD") {
         require(admin != address(0), "Invalid admin address");
 
         // Grant admin the default admin role
@@ -60,9 +60,8 @@ contract SimpleDollar is
         _grantRole(BLACKLISTER_ROLE, admin);
     }
 
-    
     // @dev Mint new tokens to a specified address.
-     
+
     function mint(
         address to,
         uint256 amount
@@ -75,14 +74,12 @@ contract SimpleDollar is
         emit Mint(to, amount);
     }
 
-        
     function burn(
         uint256 amount
     ) public override(ERC20Burnable, ISimpleDollar) {
         super.burn(amount);
     }
-     
-    
+
     function decimals()
         public
         view
@@ -103,21 +100,19 @@ contract SimpleDollar is
         super.burnFrom(account, amount);
     }
 
-    
     //Pause token transfers and operations.
     function pause() public override onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    
     //@dev Unpause token transfers and operations.
-    
+
     function unpause() public override onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
     //Add an address to the blacklist.
-     
+
     function blacklist(
         address account
     ) public override onlyRole(BLACKLISTER_ROLE) {
@@ -128,9 +123,8 @@ contract SimpleDollar is
         emit Blacklisted(account);
     }
 
-    
     // Remove an address from the blacklist.
-    
+
     function removeFromBlacklist(
         address account
     ) public override onlyRole(BLACKLISTER_ROLE) {
@@ -140,9 +134,8 @@ contract SimpleDollar is
         emit BlacklistRemoved(account);
     }
 
-    
     // @dev Check if an address is blacklisted.
-    
+
     function isBlacklisted(
         address account
     ) public view override returns (bool) {
@@ -154,7 +147,7 @@ contract SimpleDollar is
      * @param from Sender address.
      * @param to Recipient address.
      * @param value Amount of tokens to transfer.
-     * Note: the previous __beforeTokenTransfer has been depreciated in V5, and the new function is _update. 
+     * Note: the previous __beforeTokenTransfer has been depreciated in V5, and the new function is _update.
      * It costs me quite a bit of time to find this out.
      */
     function _update(

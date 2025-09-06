@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "contracts/03-dexV2-clone/core-contracts/interfaces/IRubyswapV2Pair.sol";
-import "contracts/03-dexV2-clone/core-contracts/interfaces/IRubyswapV2Factory.sol";
-import "contracts/03-dexV2-clone/core-contracts/interfaces/IRubyswapV2Router.sol";
+import "../../core-contracts/interfaces/IRubyswapV2Pair.sol";
+import "../../core-contracts/interfaces/IRubyswapV2Factory.sol";
+import "../../core-contracts/interfaces/IRubyswapV2Router.sol";
 
 library RubyswapV2Library {
     // Returns sorted token addresses, used to handle return values from pairs sorted in this order

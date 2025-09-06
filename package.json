@@ -1,19 +1,46 @@
 {
-  "name": "hardhat-project",
+  "name": "defi-learning-portfolio",
+  "version": "1.0.0",
+  "description": "Professional DeFi learning portfolio showcasing smart contract implementations and frontend applications",
+  "private": true,
+  "workspaces": [
+    "contracts/*",
+    "frontend/*"
+  ],
   "scripts": {
-    "compile": "hardhat compile",
-    "test": "hardhat test",
-    "deploy": "hardhat run scripts/deploy.js --network sepolia"
+    "build:all": "npm run build --workspaces",
+    "test:all": "npm run test --workspaces",
+    "compile:all": "npm run compile --workspaces",
+    "clean": "rm -rf node_modules contracts/*/node_modules frontend/*/node_modules",
+    "install:all": "npm install && npm run install --workspaces"
+  },
+  "keywords": [
+    "defi",
+    "ethereum",
+    "solidity",
+    "smart-contracts",
+    "blockchain",
+    "web3",
+    "amm",
+    "dex",
+    "stablecoin",
+    "yield-vault",
+    "lending"
+  ],
+  "author": "Yiannis Chen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/defi-learning-portfolio.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "dotenv": "^16.4.7",
-    "ethereum-waffle": "^4.0.10",
-    "hardhat": "^2.22.19",
-    "prettier": "^3.5.3",
-    "prettier-plugin-solidity": "^1.4.2"
+    "hardhat": "^2.26.2"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "5.2.0"
+    "@chainlink/contracts": "^1.3.0"
   }
 }
