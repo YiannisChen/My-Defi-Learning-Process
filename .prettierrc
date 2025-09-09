@@ -1,7 +1,0 @@
-{
-    "plugins": ["prettier-plugin-solidity"],
-    "tabWidth": 4,
-    "useTabs": false,
-    "singleQuote": false
-  }
-  
