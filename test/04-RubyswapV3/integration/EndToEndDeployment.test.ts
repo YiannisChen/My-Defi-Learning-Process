@@ -225,7 +225,7 @@ describe("RubySwap V3 End-to-End Deployment", function () {
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: deployer.address,
-                deadline: Math.floor(Date.now() / 1000) + 1800
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 1800
             });
 
             // Check pool liquidity
@@ -258,7 +258,7 @@ describe("RubySwap V3 End-to-End Deployment", function () {
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: deployer.address,
-                deadline: Math.floor(Date.now() / 1000) + 1800
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 1800
             });
 
             // Check pool liquidity
@@ -291,7 +291,7 @@ describe("RubySwap V3 End-to-End Deployment", function () {
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: deployer.address,
-                deadline: Math.floor(Date.now() / 1000) + 1800
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 1800
             });
 
             // Check pool liquidity
@@ -335,7 +335,7 @@ describe("RubySwap V3 End-to-End Deployment", function () {
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: user.address,
-                deadline: Math.floor(Date.now() / 1000) + 1800
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 1800
             });
 
             // Approve tokens
@@ -351,7 +351,7 @@ describe("RubySwap V3 End-to-End Deployment", function () {
                 tokenOut: await dai.getAddress(),
                 fee: 3000,
                 recipient: user.address,
-                deadline: Math.floor(Date.now() / 1000) + 1800,
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 1800,
                 amountIn: amountIn,
                 amountOutMinimum: 1n,
                 sqrtPriceLimitX96: 0

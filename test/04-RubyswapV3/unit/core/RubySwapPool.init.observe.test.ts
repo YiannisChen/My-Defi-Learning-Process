@@ -196,7 +196,7 @@ describe("RubySwapPool Init and Observe", function () {
 			amount0Min: 0,
 			amount1Min: 0,
 			recipient: await deployer.getAddress(),
-			deadline: Math.floor(Date.now() / 1000) + 3600
+			deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600
 		};
 
 		await positionManager.mint(mintParams);
@@ -211,7 +211,7 @@ describe("RubySwapPool Init and Observe", function () {
 			tokenOut: await token1.getAddress(),
 			fee: 3000,
 			recipient: await deployer.getAddress(),
-			deadline: Math.floor(Date.now() / 1000) + 3600,
+			deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
 			amountIn: ethers.parseEther("1"),
 			amountOutMinimum: 1n,
 			sqrtPriceLimitX96: 0
@@ -299,7 +299,7 @@ describe("RubySwapPool Init and Observe", function () {
 			amount0Min: 0,
 			amount1Min: 0,
 			recipient: await deployer.getAddress(),
-			deadline: Math.floor(Date.now() / 1000) + 3600
+			deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600
 		};
 
 		await positionManager.mint(mintParams);
@@ -315,7 +315,7 @@ describe("RubySwapPool Init and Observe", function () {
 				tokenOut: await token1.getAddress(),
 				fee: 3000,
 				recipient: await deployer.getAddress(),
-				deadline: Math.floor(Date.now() / 1000) + 3600,
+				deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
 				amountIn: ethers.parseEther("0.1"),
 				amountOutMinimum: 1n,
 				sqrtPriceLimitX96: 0

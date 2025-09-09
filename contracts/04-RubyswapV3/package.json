@@ -7,6 +7,8 @@
     "compile": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage",
+    "coverage:modules": "hardhat coverage && node scripts/check-module-coverage.js",
+    "coverage:check": "hardhat coverage && node -e \"const fs=require('fs');const c=JSON.parse(fs.readFileSync('coverage/coverage-summary.json','utf8'));const s=c.total.statements.pct;const b=c.total.branches.pct;const f=c.total.functions.pct;const l=c.total.lines.pct;const pass=[s,b,f,l].every(x=>x>=90);if(!pass){console.error('Coverage below 90%:',{s,b,f,l});process.exit(1);}else{console.log('Coverage OK:',{s,b,f,l});}\"",
     "gas": "REPORT_GAS=true hardhat test",
     "deploy:timelock": "hardhat run scripts/04-RubyswapV3/deploy/00-deploy-timelock.ts --network sepolia",
     "deploy:factory": "hardhat run scripts/04-RubyswapV3/deploy/01-deploy-factory.ts --network sepolia",
@@ -40,3 +42,4 @@
     "@openzeppelin/contracts": "^4.9.6"
   }
 }
+

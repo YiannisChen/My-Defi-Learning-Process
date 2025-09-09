@@ -73,6 +73,8 @@ describe("RubySwapPool Protocol Fees - Simple Test", function () {
         await positionManager.waitForDeployment();
         
         // Add some liquidity to the pool so it's not empty
+        const latest = await ethers.provider.getBlock("latest");
+        const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         const mintParams = {
             token0: await tokenA.getAddress(),
             token1: await tokenB.getAddress(),
@@ -84,7 +86,7 @@ describe("RubySwapPool Protocol Fees - Simple Test", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: await deployer.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 3600
+            deadline: now + 3600
         };
         
         // Mint tokens to deployer for liquidity provision
@@ -132,12 +134,14 @@ describe("RubySwapPool Protocol Fees - Simple Test", function () {
             await token0.connect(user1Signer).approve(await router.getAddress(), ethers.MaxUint256);
             await token1.connect(user1Signer).approve(await router.getAddress(), ethers.MaxUint256);
 
+            const latest2 = await ethers.provider.getBlock("latest");
+            const now2 = (latest2?.timestamp || Math.floor(Date.now() / 1000));
             const paramsIn0 = {
                 tokenIn: token0Addr,
                 tokenOut: token1Addr,
                 fee: 3000,
                 recipient: user1Signer.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: now2 + 3600,
                 amountIn: ethers.parseEther("1"),
                 amountOutMinimum: 1n,
                 sqrtPriceLimitX96: 0
@@ -149,7 +153,7 @@ describe("RubySwapPool Protocol Fees - Simple Test", function () {
                 tokenOut: token0Addr,
                 fee: 3000,
                 recipient: user1Signer.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: now2 + 3600,
                 amountIn: ethers.parseEther("1"),
                 amountOutMinimum: 1n,
                 sqrtPriceLimitX96: 0

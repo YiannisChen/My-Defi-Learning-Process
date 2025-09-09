@@ -66,6 +66,8 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
     describe("CRITICAL: ERC-721 Ownership Vulnerabilities", function () {
         it("VULN-021 CRITICAL: Unauthorized position modification", async function () {
             // User1 creates a position
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             const mintParams = {
                 token0: await token0.getAddress(),
                 token1: await token1.getAddress(),
@@ -77,7 +79,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
 
             await token0.connect(user1).approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -108,7 +110,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 amount1Desired: ethers.parseEther("5"),
                 amount0Min: 0,
                 amount1Min: 0,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
             
             await expect(
@@ -119,6 +121,8 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
         });
 
         it("VULN-022 HIGH: Approval bypass vulnerability", async function () {
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             // Create position as user1
             const mintParams = {
                 token0: await token0.getAddress(),
@@ -131,7 +135,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
 
             await token0.connect(user1).approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -162,6 +166,8 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
         });
 
         it("VULN-023 CRITICAL: Reentrancy during NFT transfer", async function () {
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             // Create position
             const mintParams = {
                 token0: await token0.getAddress(),
@@ -174,7 +180,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
 
             await token0.connect(user1).approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -185,7 +191,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
             
             // Deploy malicious ERC721 receiver that attempts reentrancy in onERC721Received
             const MaliciousReceiver = await ethers.getContractFactory("MaliciousERC721Receiver");
-            const maliciousReceiver = await MaliciousReceiver.deploy(await positionManager.getAddress());
+            const maliciousReceiver = await MaliciousReceiver.deploy();
             await maliciousReceiver.waitForDeployment();
             
             // Transfer should not allow reentrancy
@@ -204,6 +210,8 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
 
     describe("CRITICAL: Permit and Signature Vulnerabilities", function () {
         it("VULN-024 HIGH: Signature replay attack", async function () {
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             // Create position
             const mintParams = {
                 token0: await token0.getAddress(),
@@ -216,7 +224,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
 
             await token0.connect(user1).approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -226,7 +234,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
             const tokenId = 1n;
             const spender = user2.address;
             const nonce = await positionManager.getNonce(tokenId);
-            const deadline = Math.floor(Date.now() / 1000) + 3600;
+            const deadline = now + 3600;
             
             // Get domain separator
             const domain = {
@@ -272,6 +280,8 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
         });
 
         it("VULN-025 MEDIUM: Expired permit acceptance", async function () {
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             const mintParams = {
                 token0: await token0.getAddress(),
                 token1: await token1.getAddress(),
@@ -283,7 +293,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
 
             await token0.connect(user1).approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -293,7 +303,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
             const tokenId = 1n;
             const spender = user2.address;
             const nonce = await positionManager.getNonce(tokenId);
-            const expiredDeadline = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+            const expiredDeadline = now - 3600; // 1 hour ago
             
             // Try to use expired permit
             await expect(
@@ -306,6 +316,8 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
 
     describe("CRITICAL: Position Burn Security", function () {
         it("VULN-026 HIGH: Burn position with outstanding liquidity", async function () {
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             // Create position with liquidity
             const mintParams = {
                 token0: await token0.getAddress(),
@@ -318,7 +330,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
 
             await token0.connect(user1).approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -340,7 +352,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 liquidity: liquidityValue,
                 amount0Min: 0n,
                 amount1Min: 0n,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
             
             await positionManager.connect(user1).decreaseLiquidity(decreaseParams);
@@ -367,6 +379,8 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
         });
 
         it("VULN-027 MEDIUM: Fee collection after burn", async function () {
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             // Create and then properly burn a position
             const mintParams = {
                 token0: await token0.getAddress(),
@@ -379,7 +393,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
 
             await token0.connect(user1).approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -396,7 +410,7 @@ describe("RubySwapPositionManager - ERC721 Security Audit (Agent B)", function (
                 liquidity: liquidityValue2,
                 amount0Min: 0n,
                 amount1Min: 0n,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             });
             
             await positionManager.connect(user1).collect({

@@ -97,7 +97,7 @@ describe("Attack Vectors Test", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: await deployer.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 3600
+            deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600
         };
         
         await token0.approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -118,7 +118,7 @@ describe("Attack Vectors Test", function () {
                 tokenOut: await token1.getAddress(),
                 fee: 3000,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
                 amountIn: ethers.parseEther("1"),
                 amountOutMinimum: 1n,
                 sqrtPriceLimitX96: 0
@@ -146,7 +146,7 @@ describe("Attack Vectors Test", function () {
                 tokenOut: await token1.getAddress(),
                 fee: 3000,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
                 amountIn: ethers.parseEther("1"),
                 amountOutMinimum: 1n,
                 sqrtPriceLimitX96: 0

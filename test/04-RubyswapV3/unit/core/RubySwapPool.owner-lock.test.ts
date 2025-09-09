@@ -58,7 +58,7 @@ describe("RubySwapPool - Owner actions lock", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: deployer.address,
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
         });
 
         // Set protocol fee and perform swaps to accrue protocol fees on at least one token
@@ -74,7 +74,7 @@ describe("RubySwapPool - Owner actions lock", function () {
             tokenOut: await token1.getAddress(),
             fee: 3000,
             recipient: deployer.address,
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
             amountIn: ethers.parseEther("0.5"),
             amountOutMinimum: 1n,
             sqrtPriceLimitX96: 0,
@@ -85,7 +85,7 @@ describe("RubySwapPool - Owner actions lock", function () {
             tokenOut: await token0.getAddress(),
             fee: 3000,
             recipient: deployer.address,
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
             amountIn: ethers.parseEther("0.5"),
             amountOutMinimum: 1n,
             sqrtPriceLimitX96: 0,

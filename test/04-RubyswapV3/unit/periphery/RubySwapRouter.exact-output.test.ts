@@ -90,6 +90,8 @@ describe("RubySwapRouter Exact Output Swaps", function () {
         await token1.mint(user1.address, ethers.parseEther("10000"));
 
         // Add initial liquidity
+        const latest = await ethers.provider.getBlock("latest");
+        const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         const mintParams = {
             token0: await token0.getAddress(),
             token1: await token1.getAddress(),
@@ -101,7 +103,7 @@ describe("RubySwapRouter Exact Output Swaps", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: await deployer.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 3600
+            deadline: now + 3600
         };
         
         await token0.approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -122,7 +124,7 @@ describe("RubySwapRouter Exact Output Swaps", function () {
                 tokenOut: await token1.getAddress(),
                 fee: 3000,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
                 amountOut: amountOut,
                 amountInMaximum: amountInMaximum,
                 sqrtPriceLimitX96: 0
@@ -146,7 +148,7 @@ describe("RubySwapRouter Exact Output Swaps", function () {
                 tokenOut: await token1.getAddress(),
                 fee: 3000,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
                 amountOut: amountOut,
                 amountInMaximum: amountInMaximum,
                 sqrtPriceLimitX96: 0
@@ -176,7 +178,7 @@ describe("RubySwapRouter Exact Output Swaps", function () {
             const swapParams = {
                 path: path,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
                 amountOut: amountOut,
                 amountInMaximum: amountInMaximum
             };

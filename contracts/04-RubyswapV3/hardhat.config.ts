@@ -34,23 +34,15 @@ const config: HardhatUserConfig = {
             },
             viaIR: true,
         },
-        overrides: isCoverage
-            ? {
-                  // Disable viaIR for periphery/security during coverage for accurate instrumentation
-                  "periphery/**/*.sol": {
-                      settings: {
-                          optimizer: { enabled: true, runs: 200 },
-                          viaIR: false,
-                      },
-                  },
-                  "security/**/*.sol": {
-                      settings: {
-                          optimizer: { enabled: true, runs: 200 },
-                          viaIR: false,
-                      },
-                  },
-              }
-            : {},
+        overrides: {
+            // Keep pool with viaIR to avoid stack-too-deep while default remains false
+            "core-contracts/RubySwapPool.sol": {
+                settings: { optimizer: { enabled: true, runs: 200 }, viaIR: true },
+            },
+            "contracts/04-RubyswapV3/core-contracts/RubySwapPool.sol": {
+                settings: { optimizer: { enabled: true, runs: 200 }, viaIR: true },
+            },
+        },
     },
     networks: {
         hardhat: {

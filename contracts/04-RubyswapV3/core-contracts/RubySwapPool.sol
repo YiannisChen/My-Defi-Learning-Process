@@ -125,7 +125,7 @@ contract RubySwapPool is IRubySwapPool {
 	}
 
 	// ===== CONSTRUCTOR =====
-
+	
 	constructor() {
 		int24 _tickSpacing;
 		(factory, token0, token1, fee, _tickSpacing) = IRubySwapPoolDeployer(msg.sender).parameters();
@@ -135,7 +135,7 @@ contract RubySwapPool is IRubySwapPool {
 	}
 
 	// ===== INTERNAL FUNCTIONS =====
-
+	
 	/// @dev Common checks for valid tick inputs
 	function checkTicks(int24 tickLower, int24 tickUpper) private pure {
 		require(tickLower < tickUpper, "TLU");
@@ -203,8 +203,6 @@ contract RubySwapPool is IRubySwapPool {
 					sqrtPriceX96,
 					params.liquidityDelta
 				);
-
-				liquidity = LiquidityMath.addDelta(liquidity, params.liquidityDelta);
 			} else {
 				amount1 = SqrtPriceMath.getAmount1Delta(
 					TickMath.getSqrtRatioAtTick(params.tickLower),
@@ -454,6 +452,11 @@ contract RubySwapPool is IRubySwapPool {
 		amount0 = uint256(amount0Int);
 		amount1 = uint256(amount1Int);
 
+		// If current tick is within the added range, update global liquidity
+		if (tick >= tickLower && tick < tickUpper) {
+			liquidity = LiquidityMath.addDelta(liquidity, int128(int256(uint256(amount))));
+		}
+
 		uint256 balance0Before;
 		uint256 balance1Before;
 		if (amount0 > 0) balance0Before = balance0();
@@ -461,6 +464,20 @@ contract RubySwapPool is IRubySwapPool {
 		IRubySwapV3MintCallback(msg.sender).rubySwapV3MintCallback(amount0, amount1, data);
 		if (amount0 > 0) require(balance0Before + amount0 <= balance0(), "M0");
 		if (amount1 > 0) require(balance1Before + amount1 <= balance1(), "M1");
+		// Write oracle observation for TWAP after mint
+		{
+			(uint16 newIndex, uint16 newCard) = Oracle.write(
+				observations,
+				observationIndex,
+				_blockTimestamp(),
+				tick,
+				liquidity,
+				observationCardinality,
+				observationCardinalityNext
+			);
+			observationIndex = newIndex;
+			observationCardinality = newCard;
+		}
 	}
 
 	/// @inheritdoc IRubySwapPool
@@ -512,6 +529,25 @@ contract RubySwapPool is IRubySwapPool {
 				position.tokensOwed0 + uint128(amount0),
 				position.tokensOwed1 + uint128(amount1)
 			);
+		}
+		// If current tick is within the removed range, update global liquidity
+		if (tick >= tickLower && tick < tickUpper) {
+			int128 delta = -int128(int256(uint256(amount)));
+			liquidity = LiquidityMath.addDelta(liquidity, delta);
+		}
+		// Write oracle observation for TWAP after burn
+		{
+			(uint16 newIndex, uint16 newCard) = Oracle.write(
+				observations,
+				observationIndex,
+				_blockTimestamp(),
+				tick,
+				liquidity,
+				observationCardinality,
+				observationCardinalityNext
+			);
+			observationIndex = newIndex;
+			observationCardinality = newCard;
 		}
 	}
 
@@ -575,18 +611,30 @@ contract RubySwapPool is IRubySwapPool {
 		uint256 amountIn;
 		uint256 amountOut;
 		uint256 feeAmount;
+		uint160 startSqrt = sqrtPriceX96;
+		uint160 newSqrt;
 		
 		if (isExactInput) {
-			// Exact input swap
+			// Gross input and fee
 			amountIn = uint256(amountSpecified);
 			feeAmount = FullMath.mulDivRoundingUp(amountIn, fee, 1e6);
-			amountOut = amountIn - feeAmount;
+			uint256 amountInAfterFee = amountIn - feeAmount;
+			// Compute new price from net input
+			newSqrt = SqrtPriceMath.getNextSqrtPriceFromInput(startSqrt, liquidity, amountInAfterFee, zeroForOne);
+			// Compute output from price movement
+			amountOut = zeroForOne
+				? uint256(SqrtPriceMath.getAmount1Delta(newSqrt, startSqrt, liquidity, false))
+				: uint256(SqrtPriceMath.getAmount0Delta(startSqrt, newSqrt, liquidity, false));
 		} else {
-			// Exact output swap
+			// Exact output: determine price movement first
 			amountOut = uint256(-amountSpecified);
-			// Calculate required input including fees
-			amountIn = FullMath.mulDivRoundingUp(amountOut, 1e6, 1e6 - fee);
-			feeAmount = amountIn - amountOut;
+			newSqrt = SqrtPriceMath.getNextSqrtPriceFromOutput(startSqrt, liquidity, amountOut, zeroForOne);
+			uint256 amountInAfterFee = zeroForOne
+				? uint256(SqrtPriceMath.getAmount0Delta(newSqrt, startSqrt, liquidity, true))
+				: uint256(SqrtPriceMath.getAmount1Delta(startSqrt, newSqrt, liquidity, true));
+			// Gross input includes fees
+			amountIn = FullMath.mulDivRoundingUp(amountInAfterFee, 1e6, 1e6 - fee);
+			feeAmount = amountIn - amountInAfterFee;
 		}
 		
 		// Handle protocol fees
@@ -614,40 +662,45 @@ contract RubySwapPool is IRubySwapPool {
 			lpFee1 = zeroForOne ? 0 : feeAmount;
 		}
 		
-		// Pay out to recipient first
+		// Pay out to recipient first and pull in input via callback
 		if (zeroForOne) {
 			IERC20(token1).transfer(recipient, amountOut);
-			// Collect input via callback
 			uint256 bal0Before = balance0();
 			IRubySwapV3SwapCallback(msg.sender).rubySwapV3SwapCallback(int256(amountIn), -int256(amountOut), data);
 			require(balance0() >= bal0Before + amountIn, "IIA");
 			amount0 = int256(amountIn);
 			amount1 = -int256(amountOut);
-			
-			// Update protocol fees and LP fee growth
-			if (protocolFee0 > 0) {
-				protocolFees.token0 += uint128(protocolFee0);
-			}
-			if (lpFee0 > 0) {
-				feeGrowthGlobal0X128 += FullMath.mulDiv(lpFee0, FixedPoint128.Q128, liquidity);
-			}
+			// Update LP/protocol fees
+			if (protocolFee0 > 0) protocolFees.token0 += uint128(protocolFee0);
+			if (lpFee0 > 0) feeGrowthGlobal0X128 += FullMath.mulDiv(lpFee0, FixedPoint128.Q128, liquidity);
 		} else {
 			IERC20(token0).transfer(recipient, amountOut);
-			// Collect input via callback
 			uint256 bal1Before = balance1();
 			IRubySwapV3SwapCallback(msg.sender).rubySwapV3SwapCallback(-int256(amountOut), int256(amountIn), data);
 			require(balance1() >= bal1Before + amountIn, "IIA");
 			amount0 = -int256(amountOut);
 			amount1 = int256(amountIn);
-			
-			// Update protocol fees and LP fee growth
-			if (protocolFee1 > 0) {
-				protocolFees.token1 += uint128(protocolFee1);
-			}
-			if (lpFee1 > 0) {
-				feeGrowthGlobal1X128 += FullMath.mulDiv(lpFee1, FixedPoint128.Q128, liquidity);
-			}
+			// Update LP/protocol fees
+			if (protocolFee1 > 0) protocolFees.token1 += uint128(protocolFee1);
+			if (lpFee1 > 0) feeGrowthGlobal1X128 += FullMath.mulDiv(lpFee1, FixedPoint128.Q128, liquidity);
 		}
+
+		// Update price and tick from computed newSqrt
+		sqrtPriceX96 = newSqrt;
+		tick = TickMath.getTickAtSqrtRatio(newSqrt);
+		// Write oracle observation for TWAP
+		(uint16 newIndex, uint16 newCard) = Oracle.write(
+			observations,
+			observationIndex,
+			_blockTimestamp(),
+			tick,
+			liquidity,
+			observationCardinality,
+			observationCardinalityNext
+		);
+		observationIndex = newIndex;
+		observationCardinality = newCard;
+
 		unlocked = true;
 		emit Swap(msg.sender, recipient, amount0, amount1, sqrtPriceX96, liquidity, tick);
 	}
@@ -661,15 +714,12 @@ contract RubySwapPool is IRubySwapPool {
 	) external override lock {
 		uint128 _liquidity = liquidity;
 		require(_liquidity > 0, "No liquidity");
-
 		// Calculate fees (using pool fee rate)
 		uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);
 		uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);
-
 		// Record balances before transfer
 		uint256 balance0Before = balance0();
 		uint256 balance1Before = balance1();
-
 		// Transfer tokens to recipient
 		if (amount0 > 0) {
 			require(IERC20(token0).transfer(recipient, amount0), "Transfer failed");
@@ -677,34 +727,24 @@ contract RubySwapPool is IRubySwapPool {
 		if (amount1 > 0) {
 			require(IERC20(token1).transfer(recipient, amount1), "Transfer failed");
 		}
-
 		// Call the flash callback
 		IRubySwapV3FlashCallback(recipient).rubySwapV3FlashCallback(fee0, fee1, data);
-
 		// Check balances after callback
 		uint256 balance0After = balance0();
 		uint256 balance1After = balance1();
-
 		// Ensure tokens + fees were repaid
 		require(balance0Before + fee0 <= balance0After, "Insufficient token0 repayment");
 		require(balance1Before + fee1 <= balance1After, "Insufficient token1 repayment");
-
 		// Calculate actual amounts paid (includes fees)
 		uint256 paid0 = balance0After - balance0Before;
 		uint256 paid1 = balance1After - balance1Before;
-
 		// Update fee growth global if fees were paid
 		if (paid0 > 0) {
-			// For now, add all fees to feeGrowthGlobal (no protocol fees)
-			// In production, protocol fees would be split here
 			feeGrowthGlobal0X128 += FullMath.mulDiv(paid0, FixedPoint128.Q128, _liquidity);
 		}
 		if (paid1 > 0) {
-			// For now, add all fees to feeGrowthGlobal (no protocol fees)
-			// In production, protocol fees would be split here
 			feeGrowthGlobal1X128 += FullMath.mulDiv(paid1, FixedPoint128.Q128, _liquidity);
 		}
-
 		emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);
 	}
 
@@ -748,4 +788,4 @@ contract RubySwapPool is IRubySwapPool {
 
 		emit CollectProtocol(msg.sender, recipient, amount0, amount1);
 	}
-} 
+}

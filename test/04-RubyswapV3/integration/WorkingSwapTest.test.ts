@@ -92,6 +92,8 @@ describe("Working Swap Test", function () {
     });
 
     it("should provide liquidity and perform swaps successfully", async function () {
+        const latest = await ethers.provider.getBlock("latest");
+        const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         const mintParams1 = {
             token0: await token0.getAddress(),
             token1: await token1.getAddress(),
@@ -103,7 +105,7 @@ describe("Working Swap Test", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: await deployer.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 300
+            deadline: now + 300
         };
         
         await token0.approve(await positionManager.getAddress(), mintParams1.amount0Desired);
@@ -121,7 +123,7 @@ describe("Working Swap Test", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: await deployer.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 300
+            deadline: now + 300
         };
         
         await token1.approve(await positionManager.getAddress(), mintParams2.amount0Desired);
@@ -143,7 +145,7 @@ describe("Working Swap Test", function () {
             tokenOut: await token1.getAddress(),
             fee: 3000,
             recipient: await user1.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 300,
+            deadline: now + 300,
             amountIn: ethers.parseEther("0.1"),
             amountOutMinimum: 1n,
             sqrtPriceLimitX96: 0
@@ -164,7 +166,7 @@ describe("Working Swap Test", function () {
         const multiHopParams = {
             path: path,
             recipient: await user1.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 300,
+            deadline: now + 300,
             amountIn: ethers.parseEther("0.01"),
             amountOutMinimum: 1n
         };

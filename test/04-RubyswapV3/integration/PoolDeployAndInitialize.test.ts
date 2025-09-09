@@ -12,8 +12,8 @@ describe("Pool Deploy & Initialize (current stubs)", () => {
     await tokenB.waitForDeployment();
 
     const Deployer = await ethers.getContractFactory("TestPoolDeployer");
-    // Set factory to deployer for sanity
-    const poolDeployer = await Deployer.deploy(await deployer.getAddress());
+    // No constructor args; provide factory at deploy() call
+    const poolDeployer = await Deployer.deploy();
     await poolDeployer.waitForDeployment();
 
     const fee = 3000; // 0.3%
@@ -21,12 +21,14 @@ describe("Pool Deploy & Initialize (current stubs)", () => {
 
     // Predict return value with staticCall, then execute
     const poolAddress = await poolDeployer.deploy.staticCall(
+      await deployer.getAddress(),
       await tokenA.getAddress(),
       await tokenB.getAddress(),
       fee,
       tickSpacing
     );
     await poolDeployer.deploy(
+      await deployer.getAddress(),
       await tokenA.getAddress(),
       await tokenB.getAddress(),
       fee,

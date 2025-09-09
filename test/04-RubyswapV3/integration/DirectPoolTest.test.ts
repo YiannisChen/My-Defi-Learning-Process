@@ -90,6 +90,8 @@ describe("Direct Pool Test", function () {
         expect(unlocked).to.be.true;
         
         // Add liquidity
+        const latest = await ethers.provider.getBlock("latest");
+        const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         const mintParams = {
             token0: await token0.getAddress(),
             token1: await token1.getAddress(),
@@ -101,7 +103,7 @@ describe("Direct Pool Test", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: await deployer.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 3600
+            deadline: now + 3600
         };
         
         await token0.approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -138,7 +140,7 @@ describe("Direct Pool Test", function () {
             tokenOut: await token1.getAddress(),
             fee: 3000,
             recipient: await deployer.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 300,
+            deadline: now + 300,
             amountIn: ethers.parseEther("0.01"),
             amountOutMinimum: 1n,
             sqrtPriceLimitX96: 0

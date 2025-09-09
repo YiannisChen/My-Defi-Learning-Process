@@ -8,6 +8,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
     let token0: any, token1: any, token2: any;
     let pool1: any, pool2: any;
     let positionManager: any;
+    let now: number;
 
     beforeEach(async function () {
         [deployer, user1] = await ethers.getSigners();
@@ -82,6 +83,8 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
         await token1.mint(user1.address, ethers.parseEther("100"));
         await token2.mint(user1.address, ethers.parseEther("100"));
 
+        const latest = await ethers.provider.getBlock("latest");
+        now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         // Add liquidity
         const mintParams = {
             token0: await token0.getAddress(),
@@ -94,7 +97,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: deployer.address,
-            deadline: Math.floor(Date.now() / 1000) + 3600
+            deadline: now + 3600
         };
 
         await token0.approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -113,7 +116,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: deployer.address,
-            deadline: Math.floor(Date.now() / 1000) + 3600
+            deadline: now + 3600
         };
 
         await token1.approve(await positionManager.getAddress(), mintParams2.amount0Desired);
@@ -132,7 +135,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
                 tokenOut: await token1.getAddress(),
                 fee: 3000,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: now + 3600,
                 amountIn: swapAmount,
                 amountOutMinimum: 0, // now forbidden
                 sqrtPriceLimitX96: 0
@@ -152,7 +155,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
                 tokenOut: await token1.getAddress(),
                 fee: 3000,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: now + 3600,
                 amountOut: swapAmount,
                 amountInMaximum: ethers.MaxUint256, // now forbidden (too high)
                 sqrtPriceLimitX96: 0
@@ -175,7 +178,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
             const params = {
                 path: path,
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: now + 3600,
                 amountIn: swapAmount,
                 amountOutMinimum: ethers.parseEther("0.9") // enforce non-zero slippage protection
             };
@@ -191,7 +194,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
             const swapAmount = ethers.parseEther("1");
             await token0.connect(user1).approve(await router.getAddress(), swapAmount);
 
-            const expiredDeadline = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+            const expiredDeadline = now - 3600; // 1 hour ago
 
             const params = {
                 tokenIn: await token0.getAddress(),
@@ -213,7 +216,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
             const swapAmount = ethers.parseEther("1");
             await token0.connect(user1).approve(await router.getAddress(), swapAmount);
 
-            const farFutureDeadline = Math.floor(Date.now() / 1000) + (365 * 24 * 3600); // 1 year
+            const farFutureDeadline = now + (365 * 24 * 3600); // 1 year
 
             const params = {
                 tokenIn: await token0.getAddress(),
@@ -246,7 +249,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
             const params = {
                 path: malformedPath, // MALFORMED PATH
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: now + 3600,
                 amountIn: swapAmount,
                 amountOutMinimum: 0
             };
@@ -272,7 +275,7 @@ describe("RubySwapRouter - Slippage Protection Audit (Agent B)", function () {
             const params = {
                 path: selfPath, // SELF-REFERENTIAL PATH
                 recipient: user1.address,
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: now + 3600,
                 amountIn: swapAmount,
                 amountOutMinimum: 0
             };

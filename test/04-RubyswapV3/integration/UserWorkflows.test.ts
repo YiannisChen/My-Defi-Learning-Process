@@ -81,7 +81,8 @@ describe("User Workflows Test", function () {
 
     describe("Complete Liquidity Provider Journey", function () {
         it("should complete full LP lifecycle: mint -> increase -> collect -> decrease -> burn", async function () {
-            
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             // 1. Mint initial position
             const mintParams = {
                 token0: await token0.getAddress(),
@@ -94,7 +95,7 @@ describe("User Workflows Test", function () {
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
             
             await token0.connect(user1).approve(await positionManager.getAddress(), ethers.MaxUint256);
@@ -127,7 +128,7 @@ describe("User Workflows Test", function () {
                 amount1Desired: ethers.parseEther("500"),
                 amount0Min: 0,
                 amount1Min: 0,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
             
             await token0.connect(user1).approve(await positionManager.getAddress(), increaseLiquidityParams.amount0Desired);
@@ -167,7 +168,7 @@ describe("User Workflows Test", function () {
                 liquidity: position.liquidity / 2n,
                 amount0Min: 0,
                 amount1Min: 0,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
             
             await expect(
@@ -181,7 +182,7 @@ describe("User Workflows Test", function () {
                 liquidity: updatedPosition.liquidity,
                 amount0Min: 0,
                 amount1Min: 0,
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
             
             await positionManager.connect(user1).decreaseLiquidity(burnParams);
@@ -194,6 +195,8 @@ describe("User Workflows Test", function () {
 
     describe("Complete Trader Journey", function () {
         it("should complete basic swaps with the position manager", async function () {
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             // Test basic position management functionality
             const mintParams = {
                 token0: await token0.getAddress(),
@@ -206,7 +209,7 @@ describe("User Workflows Test", function () {
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
             
             await token0.connect(user1).approve(await positionManager.getAddress(), ethers.MaxUint256);
@@ -234,6 +237,8 @@ describe("User Workflows Test", function () {
         });
         
         it("should enforce basic position management", async function () {
+            const latest = await ethers.provider.getBlock("latest");
+            const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
             // Test that position management works
             const mintParams = {
                 token0: await token0.getAddress(),
@@ -246,7 +251,7 @@ describe("User Workflows Test", function () {
                 amount0Min: 0,
                 amount1Min: 0,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600
+                deadline: now + 3600
             };
             
             await token0.connect(user1).approve(await positionManager.getAddress(), ethers.MaxUint256);

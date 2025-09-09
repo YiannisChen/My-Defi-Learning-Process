@@ -106,6 +106,10 @@ export async function setupTestEnvironment(): Promise<TestEnvironment> {
     await token1.mint(await user2.getAddress(), mintAmount);
     await token2.mint(await user2.getAddress(), mintAmount);
     
+    // Compute on-chain based deadline
+    const latest = await ethers.provider.getBlock("latest");
+    const deadline = (latest?.timestamp || Math.floor(Date.now() / 1000)) + 3600;
+
     // Add initial liquidity to the pool so swaps can work
     const mintParams = {
         token0: await token0.getAddress(),
@@ -118,7 +122,7 @@ export async function setupTestEnvironment(): Promise<TestEnvironment> {
         amount0Min: 0,
         amount1Min: 0,
         recipient: await deployer.getAddress(),
-        deadline: Math.floor(Date.now() / 1000) + 3600
+        deadline
     };
     
     await token0.approve(await positionManager.getAddress(), mintParams.amount0Desired);
@@ -142,7 +146,7 @@ export async function setupTestEnvironment(): Promise<TestEnvironment> {
         amount0Min: 0,
         amount1Min: 0,
         recipient: await deployer.getAddress(),
-        deadline: Math.floor(Date.now() / 1000) + 3600
+        deadline
     };
     
     await token1.approve(await positionManager.getAddress(), mintParams2.amount0Desired);
@@ -151,15 +155,17 @@ export async function setupTestEnvironment(): Promise<TestEnvironment> {
     
     // Helper function to perform swaps for fee generation
     const performSwaps = async (count: number) => {
+        const latest2 = await ethers.provider.getBlock("latest");
+        const dl = (latest2?.timestamp || Math.floor(Date.now() / 1000)) + 3600;
         for (let i = 0; i < count; i++) {
             const swapParams = {
                 tokenIn: await token0.getAddress(),
                 tokenOut: await token1.getAddress(),
                 fee: 3000,
                 recipient: await user1.getAddress(),
-                deadline: Math.floor(Date.now() / 1000) + 3600,
+                deadline: dl,
                 amountIn: ethers.parseEther("1"),
-                amountOutMinimum: 0,
+                amountOutMinimum: 1, // ensure non-zero slippage bound
                 sqrtPriceLimitX96: 0
             };
             

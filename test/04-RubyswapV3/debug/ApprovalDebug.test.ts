@@ -115,6 +115,8 @@ describe("Approval Debug", function () {
         console.log("✅ Approvals verified");
         
         // Try to mint position
+        const latest = await ethers.provider.getBlock("latest");
+        const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         const mintParams = {
             token0: token0.target,
             token1: token1.target,
@@ -126,7 +128,7 @@ describe("Approval Debug", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: user1.address,
-            deadline: Math.floor(Date.now() / 1000) + 3600
+            deadline: now + 3600
         };
         
         console.log("Attempting to mint position...");

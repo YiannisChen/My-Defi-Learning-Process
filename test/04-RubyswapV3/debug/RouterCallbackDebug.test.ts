@@ -102,12 +102,14 @@ describe("Router Callback Debug", function () {
         console.log("Router allowance:", ethers.formatEther(allowance));
         
         // Step 3: Try the swap with detailed logging
+        const latest = await ethers.provider.getBlock("latest");
+        const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         const swapParams = {
             tokenIn: await token0.getAddress(),
             tokenOut: await token1.getAddress(),
             fee: 3000,
             recipient: await user1.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: now + 3600,
             amountIn: swapAmount,
             amountOutMinimum: 0,
             sqrtPriceLimitX96: 0

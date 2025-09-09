@@ -63,6 +63,8 @@ describe("RubySwapQuoter", function () {
 
 		await token0.mint(user1.address, ethers.parseEther("100"));
 		await token1.mint(user1.address, ethers.parseEther("100"));
+		const latest = await ethers.provider.getBlock("latest");
+		const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
 		const mintParams = {
 			token0: await token0.getAddress(),
 			token1: await token1.getAddress(),
@@ -74,7 +76,7 @@ describe("RubySwapQuoter", function () {
 			amount0Min: 0,
 			amount1Min: 0,
 			recipient: await user1.getAddress(),
-			deadline: Math.floor(Date.now() / 1000) + 3600
+			deadline: now + 3600
 		};
 		await token0.connect(user1).approve(await positionManager.getAddress(), mintParams.amount0Desired);
 		await token1.connect(user1).approve(await positionManager.getAddress(), mintParams.amount1Desired);

@@ -79,6 +79,8 @@ describe("RubySwapRouter Exact Input - Default Price Limit", function () {
         // Liquidity
         await token0.mint(deployer.address, ethers.parseEther("100"));
         await token1.mint(deployer.address, ethers.parseEther("100"));
+        const latest = await ethers.provider.getBlock("latest");
+        const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         const mintParams = {
             token0: await token0.getAddress(),
             token1: await token1.getAddress(),
@@ -90,7 +92,7 @@ describe("RubySwapRouter Exact Input - Default Price Limit", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: await deployer.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 3600
+            deadline: now + 3600
         };
         await token0.approve(await positionManager.getAddress(), mintParams.amount0Desired);
         await token1.approve(await positionManager.getAddress(), mintParams.amount1Desired);
@@ -110,7 +112,7 @@ describe("RubySwapRouter Exact Input - Default Price Limit", function () {
             tokenOut: await token1.getAddress(),
             fee: 3000,
             recipient: await user1.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
             amountIn: ethers.parseEther("1"),
             amountOutMinimum: 1n,
             sqrtPriceLimitX96: 0
@@ -128,7 +130,7 @@ describe("RubySwapRouter Exact Input - Default Price Limit", function () {
             tokenOut: await token0.getAddress(),
             fee: 3000,
             recipient: await user1.getAddress(),
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: (await ethers.provider.getBlock("latest")).timestamp + 3600,
             amountIn: ethers.parseEther("1"),
             amountOutMinimum: 1n,
             sqrtPriceLimitX96: 0

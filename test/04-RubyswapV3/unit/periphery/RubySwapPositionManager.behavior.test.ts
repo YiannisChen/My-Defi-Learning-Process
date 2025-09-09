@@ -48,6 +48,8 @@ describe("RubySwapPositionManager - behavior", function () {
         await token0.connect(user).approve(await pm.getAddress(), ethers.MaxUint256);
         await token1.connect(user).approve(await pm.getAddress(), ethers.MaxUint256);
 
+        const latest = await ethers.provider.getBlock("latest");
+        const now = (latest?.timestamp || Math.floor(Date.now() / 1000));
         // Mint
         const mintTx = await pm.connect(user).mint({
             token0: await token0.getAddress(),
@@ -60,7 +62,7 @@ describe("RubySwapPositionManager - behavior", function () {
             amount0Min: 0,
             amount1Min: 0,
             recipient: user.address,
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: now + 3600,
         });
         const mintRc = await mintTx.wait();
         const mintEvent = mintRc!.logs.find((l: any) => l.fragment && l.fragment.name === "IncreaseLiquidity");
@@ -74,7 +76,7 @@ describe("RubySwapPositionManager - behavior", function () {
             amount1Desired: ethers.parseEther("1"),
             amount0Min: 0,
             amount1Min: 0,
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: now + 3600,
         });
 
         // Perform a swap to accrue fees
@@ -88,7 +90,7 @@ describe("RubySwapPositionManager - behavior", function () {
             tokenOut: await token1.getAddress(),
             fee: 3000,
             recipient: user.address,
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: now + 3600,
             amountIn: ethers.parseEther("1"),
             amountOutMinimum: 1n,
             sqrtPriceLimitX96: 0,
@@ -100,7 +102,7 @@ describe("RubySwapPositionManager - behavior", function () {
             liquidity: 1000,
             amount0Min: 0,
             amount1Min: 0,
-            deadline: Math.floor(Date.now() / 1000) + 3600,
+            deadline: now + 3600,
         });
 
         // Multicall: small no-op batch (tokenURI)
