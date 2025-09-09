@@ -1,6 +1,6 @@
 # My DeFi Learning Journey
 
-> Building DeFi protocols from scratch to understand how they actually work under the hood.
+> Building DeFi protocols from scratch to understand how they actually work 
 
 ## What's in here
 
